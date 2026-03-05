@@ -10,29 +10,21 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/gl-matrix/2.8.1/gl-matrix-min.js"
                 integrity="sha512-zhHQR0/H5SEBL3Wn6yYSaTTZej12z0hVZKOv3TwCUXT1z5qeqGcXJLLrbERYRScEDDpYIJhPC1fk31gqR783iQ=="
                 crossorigin="anonymous" defer></script>
-        <script src="./js/Bug.js"></script>
-        <script src="./js/Direction.js"></script>
-        <script src="./js/Ellipsoid.js"></script>
+        <script src="./js/Ball.js"></script>
+        <script src="./js/Configuration.js"></script>
         <script src="./js/Event.js"></script>
-        <script src="./js/Garden.js"></script>
         <script src="./js/KeyCode.js"></script>
-        <script src="./js/RoundedCylinder.js"></script>
+        <script src="./js/Sphere.js"></script>
         <script src="./js/Strike.js"></script>
-        <script src="./js/Terrain.js"></script>
-        <script src="./js/Vector.js"></script>
         <script src="./js/gl/Program.js"></script>
         <script src="./js/gl/Shader.js"></script>
-        <script src="./js/gl/Texture.js"></script>
-        <script src="./js/gl/UniformBufferObject.js"></script>
-        <script src="./js/gl/VertexArrayObject.js"></script>
-        <script src="./js/gl/VertexBufferObject.js"></script>
+        <script src="js/gl/VAO.js"></script>
+        <script src="js/gl/VBO.js"></script>
     </head>
     <body onload="Strike.main();">
         <h1>Strike</h1>
         <canvas id="strike" width="750" height="450" tabindex="0"></canvas>
-        <p>Azimuth: <span id="azimuth">&nbsp;</span></p>
-        <p>Elevation: <span id="elevation">&nbsp;</span></p>
-        <p>Distance: <span id="distance">&nbsp;</span></p>
+        <p>Position: <span id="position">0.0</span></p>
         <p>FPS: <span id="fps">0</span></p>
     </body>
 </html>

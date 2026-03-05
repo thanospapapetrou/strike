@@ -6,8 +6,5 @@ const KeyCode = Object.freeze({
     ARROW_LEFT: 'ArrowLeft',
     ARROW_RIGHT: 'ArrowRight',
     PAGE_UP: 'PageUp',
-    PAGE_DOWN: 'PageDown',
-    A: 'KeyA',
-    S: 'KeyS',
-    D: 'KeyD'
+    PAGE_DOWN: 'PageDown'
 });

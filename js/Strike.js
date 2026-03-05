@@ -1,71 +1,60 @@
 'use strict';
 
 class Strike {
+    static UNIFORM_MODEL = 'model';
+    static UNIFORM_CAMERA = 'camera'; // TODO rename to view
+    static UNIFORM_PROJECTION = 'projection';
+    static UNIFORM_LIGHT_AMBIENT = 'light.ambient';
+    static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.color';
+    static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.direction';
+
+    static #ATTRIBUTES = ['position', 'normal', 'color'];
+    static #CLEAR = {color: [0.0, 0.0, 0.0, 1.0], depth: 1.0};
     static #CONTEXT = 'webgl2';
-    static #CLEAR = {
-        color: [0.0, 0.0, 0.0, 1.0], // black
-        depth: 1.0 // max
-    };
-    static #DISTANCE = {
-        min: 0.5, // 0.5 m
-        max: 5.5 // 5.5 m
-    };
-    static #FORMAT_ANGLE = (angle) => `${angle} rad (${angle * 180 / Math.PI} °)`;
-    static #FORMAT_DISTANCE = (distance) => `${distance} m`;
-    static #LIGHT = {
-        ambient: [0.25, 0.25, 0.25], // 25% white
-        directional: {
-            color: [0.75, 0.75, 0.75], // 75% white
-            direction: [-1.0, -1.0, -1.0] // from top right back
-        }
-    };
-    static #MS_PER_S = 1000; // 1 s = 1000 ms
-    static #PROJECTION = {
-        fieldOfView: 1.57079632679, // π/2 rad
-        z: {
-            near: 0.01, // 0.01 m
-            far: 180.312229203 // ~ 180 m; based on max garden diagonal
-        }
-    };
-    static #SELECTOR_AZIMUTH = 'span#azimuth';
+    static #MS_PER_S = 1000;
+    static #PROJECTION = {fieldOfView: 1.57079632679, z: {near: 0.1, far: 100.0}};
     static #SELECTOR_CANVAS = 'canvas#strike';
-    static #SELECTOR_DISTANCE = 'span#distance';
-    static #SELECTOR_ELEVATION = 'span#elevation';
     static #SELECTOR_FPS = 'span#fps';
-    static #VELOCITY = {
-        azimuth: 1.57079632679, // π/2 rad/s
-        elevation: 1.57079632679, // π/2 rad/s
-        distance: 5.0 // 5 m/s
-    };
+    static #SHADER_FRAGMENT = './glsl/strike.frag';
+    static #SHADER_VERTEX = './glsl/strike.vert';
+    static #SPHERE = new Sphere(4, 8);
 
     #gl;
-    #garden;
-    #bug;
+    #program;
+    #ball;
     #azimuth;
     #elevation;
     #distance;
     #velocityAzimuth;
     #velocityElevation;
     #velocityDistance;
+    #rotation;
     #time;
 
     static async main() {
-        const gl = document.querySelector(Strike.#SELECTOR_CANVAS).getContext(Strike.#CONTEXT);
-        const racers = await new Strike(gl, './json/garden.json');
-        requestAnimationFrame(racers.render.bind(racers));
+        const strike = await new Strike(document.querySelector(Strike.#SELECTOR_CANVAS).getContext(Strike.#CONTEXT));
+        requestAnimationFrame(strike.render.bind(strike));
     }
 
-    constructor(gl, garden) {
+    constructor(gl) {
         this.#gl = gl;
         return (async () => {
-            this.#garden = await new Garden(this.#gl, garden, this.#projection);
-            this.#bug = await new Bug(this.#gl, this.#projection, this.#garden);
-            this.#azimuth = 0.0;
+            this.#program = await new Program(this.#gl,
+                    await new Shader(this.#gl, this.#gl.VERTEX_SHADER, Strike.#SHADER_VERTEX),
+                    await new Shader(this.#gl, this.#gl.FRAGMENT_SHADER, Strike.#SHADER_FRAGMENT),
+                    [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_CAMERA, Strike.UNIFORM_MODEL,
+                    Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
+                    Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#ATTRIBUTES);
+            this.#ball = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
+                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals, color: Strike.#SPHERE.colors},
+                    Strike.#SPHERE.indices));
+            this.azimuth = 0.0;
             this.elevation = 0.0;
-            this.distance = Strike.#DISTANCE.min;
+            this.distance = Configuration.distance.max;
             this.#velocityAzimuth = 0.0;
             this.#velocityElevation = 0.0;
             this.#velocityDistance = 0.0;
+            this.#rotation = 0.0;
             this.#time = 0;
             this.#gl.clearColor(...Strike.#CLEAR.color);
             this.#gl.clearDepth(Strike.#CLEAR.depth);
@@ -80,38 +69,19 @@ class Strike {
         })();
     }
 
-    get azimuth() {
-        return this.#azimuth;
-    }
-
-    set azimuth(azimuth) {
-        this.#azimuth = Math.min(Math.max(azimuth, -Math.PI), Math.PI);
-        document.querySelector(Strike.#SELECTOR_AZIMUTH).firstChild.nodeValue
-                = Strike.#FORMAT_ANGLE(this.#azimuth);
-    }
-
-    get elevation() {
-        return this.#elevation;
-    }
-
-    set elevation(elevation) {
-        this.#elevation = Math.min(Math.max(elevation, 0), Math.PI / 2);
-        document.querySelector(Strike.#SELECTOR_ELEVATION).firstChild.nodeValue
-                = Strike.#FORMAT_ANGLE(this.#elevation);
-    }
-
-    get distance() {
-        return this.#distance;
-    }
-
-    set distance(distance) {
-        this.#distance = Math.min(Math.max(distance, Strike.#DISTANCE.min), Strike.#DISTANCE.max);
-        document.querySelector(Strike.#SELECTOR_DISTANCE).firstChild.nodeValue =
-                Strike.#FORMAT_DISTANCE(this.#distance);
-    }
-
     set fps(fps) {
         document.querySelector(Strike.#SELECTOR_FPS).firstChild.nodeValue = fps;
+    }
+
+    get rotation() {
+        return this.#rotation;
+    }
+
+    set rotation(rotation) {
+        this.#rotation = rotation;
+        if (this.#rotation >= 2 * Math.PI) {
+            this.#rotation -= 2 * Math.PI;
+        }
     }
 
     keyboard(event) {
@@ -120,44 +90,51 @@ class Strike {
         this.#velocityDistance = 0.0;
         if (event.type == Event.KEY_DOWN) {
             switch (event.code) {
+            case KeyCode.ARROW_UP:
+                this.#velocityElevation = Configuration.elevation.velocity;
+                break;
+            case KeyCode.ARROW_DOWN:
+                this.#velocityElevation = -Configuration.elevation.velocity;
+                break;
+            case KeyCode.ARROW_LEFT:
+                this.#velocityAzimuth = Configuration.azimuth.velocity;
+                break;
+            case KeyCode.ARROW_RIGHT:
+                this.#velocityAzimuth = -Configuration.azimuth.velocity;
+                break;
             case KeyCode.PAGE_UP:
-                this.#velocityElevation = Strike.#VELOCITY.elevation;
-                this.#velocityDistance = Strike.#VELOCITY.distance;
+                this.#velocityDistance = Configuration.distance.velocity;
                 break;
             case KeyCode.PAGE_DOWN:
-                this.#velocityElevation = -Strike.#VELOCITY.elevation;
-                this.#velocityDistance = -Strike.#VELOCITY.distance;
-                break;
-            case KeyCode.A:
-                this.#velocityAzimuth = -Strike.#VELOCITY.azimuth;
-                break;
-            case KeyCode.D:
-                this.#velocityAzimuth = Strike.#VELOCITY.azimuth;
-                break;
-            case KeyCode.S:
-                this.#azimuth = 0.0;
+                this.#velocityDistance = -Configuration.distance.velocity;
                 break;
             }
         }
-        this.#bug.keyboard(event);
     }
 
     render(time) {
         this.idle(time);
         this.#gl.clear(this.#gl.COLOR_BUFFER_BIT | this.#gl.DEPTH_BUFFER_BIT);
-        this.#garden.render(this.#view, Strike.#LIGHT);
-        this.#bug.render(this.#view, Strike.#LIGHT);
+        this.#gl.useProgram(this.#program.program);
+        this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_PROJECTION], false, this.#projection),
+        this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_CAMERA], false, this.#camera),
+        this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_MODEL], false, this.#model),
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Configuration.light.ambient.color);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.color);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.direction);
+        this.#ball.render(this.#model, this.rotation);
         requestAnimationFrame(this.render.bind(this));
     }
 
     idle(time) {
         const dt = (time - this.#time) / Strike.#MS_PER_S;
-        this.#time = time;
         this.fps = 1 / dt;
         this.azimuth += this.#velocityAzimuth * dt;
         this.elevation += this.#velocityElevation * dt;
         this.distance += this.#velocityDistance * dt;
-        this.#bug.idle(dt);
+        this.rotation += Configuration.rotation.velocity * dt;
+        this.#ball.idle(dt);
+        this.#time = time;
     }
 
     get #projection() {
@@ -168,15 +145,17 @@ class Strike {
         return projection;
     }
 
-    get #view() {
-        const view = mat4.create();
-        mat4.lookAt(view, vec3.fromValues(
-                this.#bug.x - this.#distance * Math.cos(this.#elevation) * Math.cos(this.#bug.yaw + this.#azimuth),
-                this.#bug.y - this.#distance * Math.cos(this.#elevation) * Math.sin(this.#bug.yaw + this.#azimuth),
-                this.#bug.z + this.#distance * Math.sin(this.#elevation)),
-                vec3.fromValues(this.#bug.x, this.#bug.y, this.#bug.z),
-                vec3.fromValues(Math.sin(this.#elevation) * Math.cos(this.#bug.yaw + this.#azimuth),
-                Math.sin(this.#elevation) * Math.sin(this.#bug.yaw + this.#azimuth), Math.cos(this.#elevation)));
-        return view;
+    get #camera() {
+        const camera = mat4.create();
+        mat4.rotateY(camera, camera, -this.azimuth);
+        mat4.rotateX(camera, camera, -this.elevation);
+        mat4.translate(camera, camera, [0.0, 0.0, this.distance]);
+        return camera;
+    }
+
+    get #model() {
+        const model = mat4.create();
+        mat4.rotateY(model, model, this.rotation);
+        return model;
     }
 }
