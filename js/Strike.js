@@ -22,6 +22,7 @@ class Strike {
 
     #gl;
     #program;
+    #table;
     #ball;
     #azimuth;
     #elevation;
@@ -29,7 +30,6 @@ class Strike {
     #velocityAzimuth;
     #velocityElevation;
     #velocityDistance;
-    #rotation;
     #time;
 
     static async main() {
@@ -46,6 +46,7 @@ class Strike {
                     [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_CAMERA, Strike.UNIFORM_MODEL, Strike.UNIFORM_COLOR,
                     Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
                     Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#ATTRIBUTES);
+            this.#table = new Table(this.#gl, this.#program);
             this.#ball = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
                     Strike.#SPHERE.indices));
@@ -55,7 +56,6 @@ class Strike {
             this.#velocityAzimuth = 0.0;
             this.#velocityElevation = 0.0;
             this.#velocityDistance = 0.0;
-            this.#rotation = 0.0;
             this.#time = 0;
             this.#gl.clearColor(...Strike.#CLEAR.color);
             this.#gl.clearDepth(Strike.#CLEAR.depth);
@@ -72,17 +72,6 @@ class Strike {
 
     set fps(fps) {
         document.querySelector(Strike.#SELECTOR_FPS).firstChild.nodeValue = fps;
-    }
-
-    get rotation() {
-        return this.#rotation;
-    }
-
-    set rotation(rotation) {
-        this.#rotation = rotation;
-        if (this.#rotation >= 2 * Math.PI) {
-            this.#rotation -= 2 * Math.PI;
-        }
     }
 
     keyboard(event) {
@@ -123,7 +112,8 @@ class Strike {
         this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Configuration.light.ambient.color);
         this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.color);
         this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.direction);
-        this.#ball.render(this.#model, this.rotation);
+        this.#table.render();
+        this.#ball.render();
         requestAnimationFrame(this.render.bind(this));
     }
 
@@ -133,7 +123,6 @@ class Strike {
         this.azimuth += this.#velocityAzimuth * dt;
         this.elevation += this.#velocityElevation * dt;
         this.distance += this.#velocityDistance * dt;
-        this.rotation += Configuration.rotation.velocity * dt;
         this.#ball.idle(dt);
         this.#time = time;
     }
@@ -156,7 +145,6 @@ class Strike {
 
     get #model() {
         const model = mat4.create();
-        mat4.rotateY(model, model, this.rotation);
         return model;
     }
 }

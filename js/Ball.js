@@ -15,8 +15,8 @@ class Ball {
         this.#vao = vao;
         this.#x = 0.0;
         this.#z = 0.0;
-        this.#vx = 1.0; // TODO
-        this.#vz = 5.0; // TODO
+        this.#vx = 0.0; // TODO
+        this.#vz = 0.0; // TODO
     }
 
     render() {
