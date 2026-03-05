@@ -4,11 +4,12 @@ class Strike {
     static UNIFORM_MODEL = 'model';
     static UNIFORM_CAMERA = 'camera'; // TODO rename to view
     static UNIFORM_PROJECTION = 'projection';
+    static UNIFORM_COLOR = 'color';
     static UNIFORM_LIGHT_AMBIENT = 'light.ambient';
     static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.color';
     static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.direction';
 
-    static #ATTRIBUTES = ['position', 'normal', 'color'];
+    static #ATTRIBUTES = ['position', 'normal'];
     static #CLEAR = {color: [0.0, 0.0, 0.0, 1.0], depth: 1.0};
     static #CONTEXT = 'webgl2';
     static #MS_PER_S = 1000;
@@ -42,11 +43,11 @@ class Strike {
             this.#program = await new Program(this.#gl,
                     await new Shader(this.#gl, this.#gl.VERTEX_SHADER, Strike.#SHADER_VERTEX),
                     await new Shader(this.#gl, this.#gl.FRAGMENT_SHADER, Strike.#SHADER_FRAGMENT),
-                    [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_CAMERA, Strike.UNIFORM_MODEL,
+                    [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_CAMERA, Strike.UNIFORM_MODEL, Strike.UNIFORM_COLOR,
                     Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
                     Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#ATTRIBUTES);
             this.#ball = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
-                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals, color: Strike.#SPHERE.colors},
+                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
                     Strike.#SPHERE.indices));
             this.azimuth = 0.0;
             this.elevation = 0.0;

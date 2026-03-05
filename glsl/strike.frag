@@ -12,15 +12,15 @@ struct Light {
     Directional directional;
 };
 
+uniform vec3 color;
 uniform Light light;
 
 in vec3 vertexNormal;
-in vec3 vertexColor;
 
 out vec4 fragmentColor;
 
 void main(void) {
-    fragmentColor = vec4(vertexColor, 1.0);
+    fragmentColor = vec4(color, 1.0);
     fragmentColor.rgb *= light.ambient + light.directional.color * max(dot(normalize(vertexNormal),
             normalize(-light.directional.direction)), 0.0);
 }

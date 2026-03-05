@@ -21,6 +21,7 @@ class Ball {
 
     render() {
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_MODEL], false, this.#model),
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_COLOR], [0.0, 1.0, 0.0]); // TODO
         this.#vao.render();
     }
 
