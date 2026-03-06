@@ -1,27 +1,36 @@
 'use strict';
 
 class Ball {
+    static #COLOR = [[1.0, 0.0, 0.0], [1.0, 0.5, 0.0], [1.0, 1.0, 1.0]];
+    static #MASS = [1, 2, 3];
+    static #RADIUS = [1, 2, 3];
+
+
     #gl;
     #program;
     #vao;
+    #rank;
     #x;
+    #y;
     #z;
     #vx;
     #vz;
 
-    constructor(gl, program, vao) {
+    constructor(gl, program, vao, rank, x, z) {
         this.#gl = gl;
         this.#program = program;
         this.#vao = vao;
-        this.#x = 0.0;
-        this.#z = 0.0;
+        this.#rank = rank;
+        this.#x = x;
+        this.#y = Ball.#RADIUS[this.#rank];
+        this.#z = z;
         this.#vx = 0.0; // TODO
         this.#vz = 0.0; // TODO
     }
 
     render() {
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_MODEL], false, this.#model),
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_COLOR], [0.0, 1.0, 0.0]); // TODO
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_COLOR], Ball.#COLOR[this.#rank]);
         this.#vao.render();
     }
 
@@ -32,7 +41,8 @@ class Ball {
 
     get #model() {
         const model = mat4.create();
-        mat4.translate(model, model, [this.#x, 0.0, this.#z]);
+        mat4.scale(model, model, [Ball.#RADIUS[this.#rank], Ball.#RADIUS[this.#rank], Ball.#RADIUS[this.#rank]]);
+        mat4.translate(model, model, [this.#x, this.#y, this.#z]);
         return model;
     }
 }

@@ -1,17 +1,18 @@
 'use strict';
 
 class Strike {
-    static UNIFORM_MODEL = 'model';
-    static UNIFORM_CAMERA = 'camera'; // TODO rename to view
-    static UNIFORM_PROJECTION = 'projection';
     static UNIFORM_COLOR = 'color';
     static UNIFORM_LIGHT_AMBIENT = 'light.ambient';
     static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.color';
     static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.direction';
+    static UNIFORM_MODEL = 'model';
+    static UNIFORM_PROJECTION = 'projection';
+    static UNIFORM_VIEW = 'view';
 
     static #ATTRIBUTES = ['position', 'normal'];
     static #CLEAR = {color: [0.0, 0.0, 0.0, 1.0], depth: 1.0};
     static #CONTEXT = 'webgl2';
+    static #LIGHT = {ambient: {color: [0.25, 0.25, 0.25]}, directional: {color: [0.75, 0.75, 0.75], direction: [0.0, 0.0, -1.0]}};
     static #MS_PER_S = 1000;
     static #PROJECTION = {fieldOfView: 1.57079632679, z: {near: 0.1, far: 100.0}};
     static #SELECTOR_CANVAS = 'canvas#strike';
@@ -23,7 +24,7 @@ class Strike {
     #gl;
     #program;
     #table;
-    #ball;
+    #balls;
     #azimuth;
     #elevation;
     #distance;
@@ -43,13 +44,16 @@ class Strike {
             this.#program = await new Program(this.#gl,
                     await new Shader(this.#gl, this.#gl.VERTEX_SHADER, Strike.#SHADER_VERTEX),
                     await new Shader(this.#gl, this.#gl.FRAGMENT_SHADER, Strike.#SHADER_FRAGMENT),
-                    [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_CAMERA, Strike.UNIFORM_MODEL, Strike.UNIFORM_COLOR,
+                    [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_VIEW, Strike.UNIFORM_MODEL, Strike.UNIFORM_COLOR,
                     Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
                     Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#ATTRIBUTES);
             this.#table = new Table(this.#gl, this.#program);
-            this.#ball = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
+            this.#balls = [new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
-                    Strike.#SPHERE.indices));
+                    Strike.#SPHERE.indices), 0, 1.0, -1.0),
+                    new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
+                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
+                    Strike.#SPHERE.indices), 1, 3.0, -3.0)];
             this.azimuth = 0.0;
             this.elevation = 0.0;
             this.distance = Configuration.distance.max;
@@ -107,13 +111,15 @@ class Strike {
         this.#gl.clear(this.#gl.COLOR_BUFFER_BIT | this.#gl.DEPTH_BUFFER_BIT);
         this.#gl.useProgram(this.#program.program);
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_PROJECTION], false, this.#projection),
-        this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_CAMERA], false, this.#camera),
+        this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_VIEW], false, this.#view),
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_MODEL], false, this.#model),
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Configuration.light.ambient.color);
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.color);
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Configuration.light.directional.direction);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Strike.#LIGHT.ambient.color);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#LIGHT.directional.color);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#LIGHT.directional.direction);
         this.#table.render();
-        this.#ball.render();
+        for (const ball of this.#balls) {
+            ball.render();
+        }
         requestAnimationFrame(this.render.bind(this));
     }
 
@@ -123,7 +129,9 @@ class Strike {
         this.azimuth += this.#velocityAzimuth * dt;
         this.elevation += this.#velocityElevation * dt;
         this.distance += this.#velocityDistance * dt;
-        this.#ball.idle(dt);
+        for (const ball of this.#balls) {
+            ball.idle(dt);
+        }
         this.#time = time;
     }
 
@@ -135,12 +143,10 @@ class Strike {
         return projection;
     }
 
-    get #camera() {
-        const camera = mat4.create();
-        mat4.rotateY(camera, camera, -this.azimuth);
-        mat4.rotateX(camera, camera, -this.elevation);
-        mat4.translate(camera, camera, [0.0, 0.0, this.distance]);
-        return camera;
+    get #view() {
+        const view = mat4.create();
+        mat4.lookAt(view, [0.0, 10.0, 10.0], [0.0, 0.0, 0.0], [0.0, 1.0, 0.0]);
+        return view;
     }
 
     get #model() {

@@ -1,7 +1,7 @@
 'use strict';
 
 class Table {
-    static #COLOR = [1.0, 0.0, 0.0];
+    static #COLOR = [1.0, 1.0, 1.0];
     static #LENGTH = 20.0;
     static #WIDTH = 10.0;
 
@@ -16,8 +16,8 @@ class Table {
                 position: [
                     -Table.#WIDTH / 2, 0.0, 0.0,
                     Table.#WIDTH / 2, 0.0, 0.0,
-                    -Table.#WIDTH / 2, 0.0, Table.#LENGTH / 2,
-                    Table.#WIDTH / 2, 0.0, Table.#LENGTH / 2
+                    -Table.#WIDTH / 2, 0.0, -Table.#LENGTH / 2,
+                    Table.#WIDTH / 2, 0.0, -Table.#LENGTH / 2
                 ], normal: [
                     0.0, 1.0, 0.0,
                     0.0, 1.0, 0.0,
