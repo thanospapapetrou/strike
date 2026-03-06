@@ -20,17 +20,14 @@ class Strike {
     static #SHADER_FRAGMENT = './glsl/strike.frag';
     static #SHADER_VERTEX = './glsl/strike.vert';
     static #SPHERE = new Sphere(4, 8);
+    static #VELOCITY = 5.0;
 
     #gl;
     #program;
     #table;
     #balls;
-    #azimuth;
-    #elevation;
-    #distance;
-    #velocityAzimuth;
-    #velocityElevation;
-    #velocityDistance;
+    #next;
+    #velocity;
     #time;
 
     static async main() {
@@ -50,16 +47,14 @@ class Strike {
             this.#table = new Table(this.#gl, this.#program);
             this.#balls = [new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
-                    Strike.#SPHERE.indices), 0, 1.0, -1.0),
+                    Strike.#SPHERE.indices), 1, 1.0, 1.0, -1.0),
                     new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
-                    Strike.#SPHERE.indices), 1, 3.0, -3.0)];
-            this.azimuth = 0.0;
-            this.elevation = 0.0;
-            this.distance = Configuration.distance.max;
-            this.#velocityAzimuth = 0.0;
-            this.#velocityElevation = 0.0;
-            this.#velocityDistance = 0.0;
+                    Strike.#SPHERE.indices), 2, 2.0, 2.0, -2.0)];
+            this.#next = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
+                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals}, Strike.#SPHERE.indices),
+                    0, 0.0, 0.0, -1.0); // TODO ball factory?
+            this.#velocity = 0.0;
             this.#time = 0;
             this.#gl.clearColor(...Strike.#CLEAR.color);
             this.#gl.clearDepth(Strike.#CLEAR.depth);
@@ -79,28 +74,14 @@ class Strike {
     }
 
     keyboard(event) {
-        this.#velocityAzimuth = 0.0;
-        this.#velocityElevation = 0.0;
-        this.#velocityDistance = 0.0;
+        this.#velocity = 0.0;
         if (event.type == Event.KEY_DOWN) {
             switch (event.code) {
-            case KeyCode.ARROW_UP:
-                this.#velocityElevation = Configuration.elevation.velocity;
-                break;
-            case KeyCode.ARROW_DOWN:
-                this.#velocityElevation = -Configuration.elevation.velocity;
-                break;
             case KeyCode.ARROW_LEFT:
-                this.#velocityAzimuth = Configuration.azimuth.velocity;
+                this.#velocity = -Strike.#VELOCITY;
                 break;
             case KeyCode.ARROW_RIGHT:
-                this.#velocityAzimuth = -Configuration.azimuth.velocity;
-                break;
-            case KeyCode.PAGE_UP:
-                this.#velocityDistance = Configuration.distance.velocity;
-                break;
-            case KeyCode.PAGE_DOWN:
-                this.#velocityDistance = -Configuration.distance.velocity;
+                this.#velocity = Strike.#VELOCITY;
                 break;
             }
         }
@@ -120,17 +101,21 @@ class Strike {
         for (const ball of this.#balls) {
             ball.render();
         }
+        this.#next.render();
         requestAnimationFrame(this.render.bind(this));
     }
 
     idle(time) {
         const dt = (time - this.#time) / Strike.#MS_PER_S;
         this.fps = 1 / dt;
-        this.azimuth += this.#velocityAzimuth * dt;
-        this.elevation += this.#velocityElevation * dt;
-        this.distance += this.#velocityDistance * dt;
         for (const ball of this.#balls) {
             ball.idle(dt);
+        }
+        this.#next.x += this.#velocity * dt;
+        if (this.#next.x > Table.WIDTH / 2 - this.#next.radius) {
+            this.#next.x = Table.WIDTH / 2 - this.#next.radius;
+        } else if (this.#next.x < -Table.WIDTH / 2 + this.#next.radius) {
+            this.#next.x = -Table.WIDTH / 2 + this.#next.radius;
         }
         this.#time = time;
     }
