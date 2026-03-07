@@ -20,14 +20,16 @@ class Strike {
     static #SHADER_FRAGMENT = './glsl/strike.frag';
     static #SHADER_VERTEX = './glsl/strike.vert';
     static #SPHERE = new Sphere(4, 8);
-    static #VELOCITY = 10.0;
+    static #VELOCITY_LAUNCH = -100.0;
+    static #VELOCITY_MOVE = 10.0;
 
     #gl;
     #program;
     #table;
     #balls;
     #next;
-    #velocity;
+    #leftPressed;
+    #rightPressed;
     #time;
 
     static async main() {
@@ -46,12 +48,9 @@ class Strike {
                     Strike.UNIFORM_LIGHT_DIRECTIONAL_DIRECTION], Strike.#ATTRIBUTES);
             this.#table = new Table(this.#gl, this.#program);
             this.#balls = [];
-            this.#next = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
-                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals}, Strike.#SPHERE.indices),
-                    0); // TODO ball factory?
-            this.#next.y = this.#next.radius;
-            this.#next.z = -this.#next.radius;
-            this.#velocity = 0.0;
+            this.#next = this.#newBall(0);
+            this.#leftPressed = false;
+            this.#rightPressed = false;
             this.#time = 0;
             this.#gl.clearColor(...Strike.#CLEAR.color);
             this.#gl.clearDepth(Strike.#CLEAR.depth);
@@ -71,17 +70,36 @@ class Strike {
     }
 
     keyboard(event) {
-        this.#velocity = 0.0;
-        if (event.type == Event.KEY_DOWN) {
+        switch (event.type) {
+        case Event.KEY_DOWN:
             switch (event.code) {
             case KeyCode.ARROW_LEFT:
-                this.#velocity = -Strike.#VELOCITY;
+                this.#next.vx = -Strike.#VELOCITY_MOVE;
+                this.#leftPressed = true;
                 break;
             case KeyCode.ARROW_RIGHT:
-                this.#velocity = Strike.#VELOCITY;
+                this.#next.vx = Strike.#VELOCITY_MOVE;
+                this.#rightPressed = true;
                 break;
             case KeyCode.SPACE:
-                this.#next.vz = -100.0;
+                this.#next.vz = Strike.#VELOCITY_LAUNCH;
+                this.#balls.push(this.#next);
+                const x = this.#next.x;
+                const vx = this.#next.vx;
+                this.#next = this.#newBall(0);
+                this.#next.x = x;
+                this.#next.vx = vx;
+            }
+            break;
+        case Event.KEY_UP:
+            switch (event.code) {
+            case KeyCode.ARROW_LEFT:
+                this.#next.vx = this.#rightPressed ? Strike.#VELOCITY_MOVE : 0.0;
+                this.#leftPressed = false;
+                break;
+            case KeyCode.ARROW_RIGHT:
+                this.#next.vx = this.#leftPressed ? -Strike.#VELOCITY_MOVE : 0.0;
+                this.#rightPressed = false;
             }
         }
     }
@@ -111,13 +129,20 @@ class Strike {
             ball.idle(dt);
         }
         this.#next.idle(dt);
-        this.#next.x += this.#velocity * dt;
         if (this.#next.x > Table.WIDTH / 2 - this.#next.radius) {
             this.#next.x = Table.WIDTH / 2 - this.#next.radius;
         } else if (this.#next.x < -Table.WIDTH / 2 + this.#next.radius) {
             this.#next.x = -Table.WIDTH / 2 + this.#next.radius;
         }
         this.#time = time;
+    }
+
+    #newBall(rank) {
+        const ball = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
+                {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals}, Strike.#SPHERE.indices), rank);
+        ball.y = ball.radius;
+        ball.z = -ball.radius;
+        return ball;
     }
 
     get #projection() {
