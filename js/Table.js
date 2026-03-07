@@ -1,8 +1,8 @@
 'use strict';
 
 class Table {
-    static LENGTH = 20.0;
-    static WIDTH = 10.0;
+    static LENGTH = 60.0;
+    static WIDTH = 30.0;
 
     static #COLOR = [1.0, 1.0, 1.0];
 

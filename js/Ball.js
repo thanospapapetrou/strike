@@ -13,18 +13,20 @@ class Ball {
     #y;
     #z;
     #vx;
+    #vy;
     #vz;
 
-    constructor(gl, program, vao, rank, x, y, z) {
+    constructor(gl, program, vao, rank) {
         this.#gl = gl;
         this.#program = program;
         this.#vao = vao;
         this.#rank = rank;
-        this.#x = x;
-        this.#y = y;
-        this.#z = z;
-        this.#vx = 0.0; // TODO
-        this.#vz = 0.0; // TODO
+        this.#x = 0.0;
+        this.#y = 0.0;
+        this.#z = 0.0;
+        this.#vx = 0.0;
+        this.#vy = 0.0;
+        this.#vz = 0.0;
     }
 
     get radius() {
@@ -35,8 +37,48 @@ class Ball {
         return this.#x;
     }
 
-    set x(value) {
-        this.#x = value;
+    set x(x) {
+        this.#x = x;
+    }
+
+    get y() {
+        return this.#y;
+    }
+
+    set y(y) {
+        this.#y = y;
+    }
+
+    get z() {
+        return this.#z;
+    }
+
+    set z(z) {
+        this.#z = z;
+    }
+
+    get vx() {
+        return this.#vx;
+    }
+
+    set vx(vx) {
+        this.#vx = vx;
+    }
+
+    get vy() {
+        return this.#vy;
+    }
+
+    set vy(vy) {
+        this.#vy = vy;
+    }
+
+    get vz() {
+        return this.#vz;
+    }
+
+    set vz(vz) {
+        this.#vz = vz;
     }
 
     render() {
@@ -47,6 +89,7 @@ class Ball {
 
     idle(dt) {
         this.#x += this.#vx * dt;
+        this.#y += this.#vy * dt;
         this.#z += this.#vz * dt;
     }
 

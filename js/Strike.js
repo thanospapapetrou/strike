@@ -12,7 +12,7 @@ class Strike {
     static #ATTRIBUTES = ['position', 'normal'];
     static #CLEAR = {color: [0.0, 0.0, 0.0, 1.0], depth: 1.0};
     static #CONTEXT = 'webgl2';
-    static #LIGHT = {ambient: [0.25, 0.25, 0.25], directional: {color: [0.75, 0.75, 0.75], direction: [0.0, 1.0, -1.0]}};
+    static #LIGHT = {ambient: [0.5, 0.5, 0.5], directional: {color: [0.5, 0.5, 0.5], direction: [0.0, 1.0, -1.0]}};
     static #MS_PER_S = 1000;
     static #PROJECTION = {fieldOfView: 1.57079632679, z: {near: 0.1, far: 100.0}};
     static #SELECTOR_CANVAS = 'canvas#strike';
@@ -20,7 +20,7 @@ class Strike {
     static #SHADER_FRAGMENT = './glsl/strike.frag';
     static #SHADER_VERTEX = './glsl/strike.vert';
     static #SPHERE = new Sphere(4, 8);
-    static #VELOCITY = 5.0;
+    static #VELOCITY = 10.0;
 
     #gl;
     #program;
@@ -45,15 +45,12 @@ class Strike {
                     Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
                     Strike.UNIFORM_LIGHT_DIRECTIONAL_DIRECTION], Strike.#ATTRIBUTES);
             this.#table = new Table(this.#gl, this.#program);
-            this.#balls = [new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
-                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
-                    Strike.#SPHERE.indices), 1, 1.0, 1.0, -1.0),
-                    new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
-                    {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
-                    Strike.#SPHERE.indices), 2, 2.0, 2.0, -2.0)];
+            this.#balls = [];
             this.#next = new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals}, Strike.#SPHERE.indices),
-                    0, 0.0, 0.0, -1.0); // TODO ball factory?
+                    0); // TODO ball factory?
+            this.#next.y = this.#next.radius;
+            this.#next.z = -this.#next.radius;
             this.#velocity = 0.0;
             this.#time = 0;
             this.#gl.clearColor(...Strike.#CLEAR.color);
@@ -83,6 +80,8 @@ class Strike {
             case KeyCode.ARROW_RIGHT:
                 this.#velocity = Strike.#VELOCITY;
                 break;
+            case KeyCode.SPACE:
+                this.#next.vz = -100.0;
             }
         }
     }
@@ -111,6 +110,7 @@ class Strike {
         for (const ball of this.#balls) {
             ball.idle(dt);
         }
+        this.#next.idle(dt);
         this.#next.x += this.#velocity * dt;
         if (this.#next.x > Table.WIDTH / 2 - this.#next.radius) {
             this.#next.x = Table.WIDTH / 2 - this.#next.radius;
