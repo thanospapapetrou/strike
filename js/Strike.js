@@ -4,7 +4,7 @@ class Strike {
     static UNIFORM_COLOR = 'color';
     static UNIFORM_LIGHT_AMBIENT = 'light.ambient';
     static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.color';
-    static UNIFORM_LIGHT_DIRECTIONAL_COLOR = 'light.directional.direction';
+    static UNIFORM_LIGHT_DIRECTIONAL_DIRECTION = 'light.directional.direction';
     static UNIFORM_MODEL = 'model';
     static UNIFORM_PROJECTION = 'projection';
     static UNIFORM_VIEW = 'view';
@@ -12,7 +12,7 @@ class Strike {
     static #ATTRIBUTES = ['position', 'normal'];
     static #CLEAR = {color: [0.0, 0.0, 0.0, 1.0], depth: 1.0};
     static #CONTEXT = 'webgl2';
-    static #LIGHT = {ambient: {color: [0.25, 0.25, 0.25]}, directional: {color: [0.75, 0.75, 0.75], direction: [0.0, 0.0, -1.0]}};
+    static #LIGHT = {ambient: [0.25, 0.25, 0.25], directional: {color: [0.75, 0.75, 0.75], direction: [0.0, 1.0, -1.0]}};
     static #MS_PER_S = 1000;
     static #PROJECTION = {fieldOfView: 1.57079632679, z: {near: 0.1, far: 100.0}};
     static #SELECTOR_CANVAS = 'canvas#strike';
@@ -43,7 +43,7 @@ class Strike {
                     await new Shader(this.#gl, this.#gl.FRAGMENT_SHADER, Strike.#SHADER_FRAGMENT),
                     [Strike.UNIFORM_PROJECTION, Strike.UNIFORM_VIEW, Strike.UNIFORM_MODEL, Strike.UNIFORM_COLOR,
                     Strike.UNIFORM_LIGHT_AMBIENT, Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR,
-                    Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#ATTRIBUTES);
+                    Strike.UNIFORM_LIGHT_DIRECTIONAL_DIRECTION], Strike.#ATTRIBUTES);
             this.#table = new Table(this.#gl, this.#program);
             this.#balls = [new Ball(this.#gl, this.#program, new VAO(this.#gl, this.#program,
                     {position: Strike.#SPHERE.positions, normal: Strike.#SPHERE.normals},
@@ -94,9 +94,9 @@ class Strike {
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_PROJECTION], false, this.#projection),
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_VIEW], false, this.#view),
         this.#gl.uniformMatrix4fv(this.#program.uniforms[Strike.UNIFORM_MODEL], false, this.#model),
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Strike.#LIGHT.ambient.color);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_AMBIENT], Strike.#LIGHT.ambient);
         this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#LIGHT.directional.color);
-        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_COLOR], Strike.#LIGHT.directional.direction);
+        this.#gl.uniform3fv(this.#program.uniforms[Strike.UNIFORM_LIGHT_DIRECTIONAL_DIRECTION], Strike.#LIGHT.directional.direction);
         this.#table.render();
         for (const ball of this.#balls) {
             ball.render();
